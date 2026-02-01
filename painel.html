@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🛒 Painel de Vendas</title>
+<style>
+  /* ========== RESET & BASE ========== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ========== SIDEBAR ========== */
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 240px;
+    background: #1a1d27;
+    border-right: 1px solid #2a2d3a;
+    padding: 24px 0;
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    text-align: center;
+    padding: 0 16px 24px;
+    border-bottom: 1px solid #2a2d3a;
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 { font-size: 1.2rem; color: #7c5cfc; }
+  .sidebar-logo span { font-size: 0.75rem; color: #666; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    color: #8892a4;
+    font-size: 0.88rem;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: #252836; color: #fff; }
+  .nav-item.active { background: #7c5cfc18; color: #7c5cfc; border-right: 3px solid #7c5cfc; }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  /* ========== MAIN CONTENT ========== */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    padding: 32px;
+    min-height: 100vh;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ========== HEADER ========== */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .page-header h2 { font-size: 1.5rem; color: #fff; }
+  .page-header .subtitle { font-size: 0.8rem; color: #666; margin-top: 2px; }
+
+  /* ========== CARDS / STATS ========== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: #1a1d27;
+    border: 1px solid #2a2d3a;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .stat-card .stat-label { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-card .stat-value { font-size: 1.8rem; font-weight: 700; color: #fff; margin-top: 4px; }
+  .stat-card .stat-value.green { color: #00e676; }
+  .stat-card .stat-value.purple { color: #7c5cfc; }
+  .stat-card .stat-value.orange { color: #ff9f43; }
+
+  /* ========== TABLES ========== */
+  .table-container {
+    background: #1a1d27;
+    border: 1px solid #2a2d3a;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #2a2d3a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .table-header h3 { font-size: 0.9rem; color: #fff; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    text-align: left;
+    padding: 12px 20px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #555;
+    border-bottom: 1px solid #2a2d3a;
+    font-weight: 600;
+  }
+  td {
+    padding: 14px 20px;
+    font-size: 0.85rem;
+    color: #c8d0dd;
+    border-bottom: 1px solid #1f2230;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #20232e; }
+
+  /* ========== BADGES ========== */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .badge-green { background: #00e67622; color: #00e676; }
+  .badge-orange { background: #ff9f4322; color: #ff9f43; }
+  .badge-red { background: #ff4d5022; color: #ff4d50; }
+  .badge-purple { background: #7c5cfc22; color: #7c5cfc; }
+
+  /* ========== BUTTONS ========== */
+  .btn {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #7c5cfc; color: #fff; }
+  .btn-outline { background: transparent; border: 1px solid #2a2d3a; color: #8892a4; }
+  .btn-outline:hover { border-color: #7c5cfc; color: #7c5cfc; }
+
+  /* ========== ITENS GRID (painel visual) ========== */
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .item-card {
+    background: #1a1d27;
+    border: 1px solid #2a2d3a;
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .item-card:hover { border-color: #7c5cfc44; }
+  .item-card .item-cat {
+    font-size: 0.7rem;
+    color: #7c5cfc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .item-card .item-name { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 8px; }
+  .item-card .item-price { font-size: 1.3rem; font-weight: 700; color: #00e676; }
+  .item-card .item-stock { font-size: 0.78rem; color: #666; margin-top: 4px; }
+  .item-card .item-stock span { color: #ff9f43; font-weight: 600; }
+
+  /* ========== EMPTY STATE ========== */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #555;
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty-state p { font-size: 0.85rem; }
+
+  /* ========== FILTERS ========== */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border: 1px solid #2a2d3a;
+    border-radius: 20px;
+    background: transparent;
+    color: #8892a4;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover, .filter-btn.active {
+    border-color: #7c5cfc;
+    color: #7c5cfc;
+    background: #7c5cfc11;
+  }
+
+  /* ========== SCROLLBAR ========== */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🛒 Bot Vendas</h1>
+      <span>Painel de Administração</span>
+    </div>
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </button>
+    <button class="nav-item" onclick="showPage('itens')">
+      <span class="icon">📦</span> Itens
+    </button>
+    <button class="nav-item" onclick="showPage('categorias')">
+      <span class="icon">📂</span> Categorias
+    </button>
+    <button class="nav-item" onclick="showPage('tickets')">
+      <span class="icon">🎫</span> Tickets
+    </button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ===== DASHBOARD ===== -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <h2>Dashboard</h2>
+          <p class="subtitle">Visão geral da loja</p>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Categorias</div>
+          <div class="stat-value purple" id="stat-categorias">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Itens Cadastrados</div>
+          <div class="stat-value purple" id="stat-itens">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Em Estoque</div>
+          <div class="stat-value green" id="stat-estoque">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tickets Pendentes</div>
+          <div class="stat-value orange" id="stat-tickets">0</div>
+        </div>
+      </div>
+
+      <!-- Itens grid visual -->
+      <div class="page-header" style="margin-bottom:12px;">
+        <h3 style="color:#fff;font-size:0.95rem;">Produtos Disponíveis</h3>
+      </div>
+      <div class="items-grid" id="dashboard-items"></div>
+    </div>
+
+    <!-- ===== ITENS ===== -->
+    <div class="page" id="page-itens">
+      <div class="page-header">
+        <div>
+          <h2>Itens</h2>
+          <p class="subtitle">Gerenciar produtos à venda</p>
+        </div>
+      </div>
+      <div class="filter-bar" id="filter-categorias"></div>
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Lista de Itens</h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Preço</th>
+              <th>Estoque</th>
+              <th>Chave Pix</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="itens-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== CATEGORIAS ===== -->
+    <div class="page" id="page-categorias">
+      <div class="page-header">
+        <div>
+          <h2>Categorias</h2>
+          <p class="subtitle">Categorias de vendas criadas</p>
+        </div>
+      </div>
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Lista de Categorias</h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Itens</th>
+              <th>Criado em</th>
+            </tr>
+          </thead>
+          <tbody id="categorias-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== TICKETS ===== -->
+    <div class="page" id="page-tickets">
+      <div class="page-header">
+        <div>
+          <h2>Tickets</h2>
+          <p class="subtitle">Transações de compra</p>
+        </div>
+      </div>
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Lista de Tickets</h3>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Usuário ID</th>
+              <th>Item</th>
+              <th>Status</th>
+              <th>Comprovantes</th>
+              <th>IP</th>
+              <th>Criado em</th>
+            </tr>
+          </thead>
+          <tbody id="tickets-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ============================================================
+// DADOS — Carregados dos arquivos JSON do bot
+// Substitua por um fetch() se criar uma API, ou cole os dados aqui
+// ============================================================
+
+// Para usar, coloque os arquivos JSON na mesma pasta e use fetch:
+let DATA = { categorias: {}, itens: {}, tickets: {} };
+
+async function loadData() {
+  try {
+    // Tenta carregar dos arquivos JSON na pasta /data
+    const [catRes, itensRes, ticketsRes] = await Promise.all([
+      fetch('data/categorias.json').catch(() => null),
+      fetch('data/itens.json').catch(() => null),
+      fetch('data/tickets.json').catch(() => null),
+    ]);
+
+    if (catRes && catRes.ok) DATA.categorias = await catRes.json();
+    if (itensRes && itensRes.ok) DATA.itens = await itensRes.json();
+    if (ticketsRes && ticketsRes.ok) DATA.tickets = await ticketsRes.json();
+  } catch (e) {
+    console.log('Dados não carregados via fetch. Usando dados de exemplo.');
+    // DADOS DE EXEMPLO para demonstração
+    DATA = {
+      categorias: {
+        'cat1': { nome: 'Software', criadoPor: '123', criadoEm: '2025-01-15T10:00:00.000Z' },
+        'cat2': { nome: 'Apps Mobile', criadoPor: '123', criadoEm: '2025-01-16T14:30:00.000Z' },
+        'cat3': { nome: 'Ferramentas', criadoPor: '123', criadoEm: '2025-01-17T09:00:00.000Z' },
+      },
+      itens: {
+        'item1': { nome: 'App Pro X', preco: 29.90, quantidade: 15, categoriaId: 'cat2', chavePix: '12345678900', linkDownload: 'https://exemplo.com/download/appx', criadoPor: '123', criadoEm: '2025-01-18T10:00:00.000Z' },
+        'item2': { nome: 'Ferramenta Auto', preco: 49.90, quantidade: 8, categoriaId: 'cat3', chavePix: '12345678900', linkDownload: 'https://exemplo.com/download/ferr', criadoPor: '123', criadoEm: '2025-01-18T11:00:00.000Z' },
+        'item3': { nome: 'Suite Office Clone', preco: 99.90, quantidade: 0, categoriaId: 'cat1', chavePix: '12345678900', linkDownload: 'https://exemplo.com/download/suite', criadoPor: '123', criadoEm: '2025-01-19T08:00:00.000Z' },
+        'item4': { nome: 'Bot Manager', preco: 19.90, quantidade: 42, categoriaId: 'cat1', chavePix: '12345678900', linkDownload: 'https://exemplo.com/download/botmgr', criadoPor: '123', criadoEm: '2025-01-19T09:30:00.000Z' },
+      },
+      tickets: {
+        'ch1': { usuarioId: '111222333', itemId: 'item1', status: 'pendente', comprovantes: [{ url: '#', nome: 'comp1.png' }], ip: '177.71.55.10', criadoEm: '2025-01-20T12:00:00.000Z' },
+        'ch2': { usuarioId: '444555666', itemId: 'item2', status: 'aceito', comprovantes: [{ url: '#', nome: 'comp2.png' }], ip: '200.100.50.25', criadoEm: '2025-01-20T14:00:00.000Z', key: 'KEY-abc123...' },
+        'ch3': { usuarioId: '777888999', itemId: 'item4', status: 'recusado', comprovantes: [], ip: null, criadoEm: '2025-01-21T10:00:00.000Z', motivoRecusa: 'Comprovante inválido' },
+      },
+    };
+  }
+
+  renderAll();
+}
+
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+  document.getElementById(`page-${page}`).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick').includes(page)) n.classList.add('active');
+  });
+}
+
+// ============================================================
+// RENDER FUNCTIONS
+// ============================================================
+function renderAll() {
+  renderDashboard();
+  renderItens();
+  renderCategorias();
+  renderTickets();
+}
+
+function renderDashboard() {
+  const cats = Object.keys(DATA.categorias).length;
+  const itens = Object.keys(DATA.itens).length;
+  const estoque = Object.values(DATA.itens).filter(i => i.quantidade > 0).length;
+  const ticketsPendentes = Object.values(DATA.tickets).filter(t => t.status === 'pendente').length;
+
+  document.getElementById('stat-categorias').textContent = cats;
+  document.getElementById('stat-itens').textContent = itens;
+  document.getElementById('stat-estoque').textContent = estoque;
+  document.getElementById('stat-tickets').textContent = ticketsPendentes;
+
+  // Grid de itens
+  const container = document.getElementById('dashboard-items');
+  const itensDisp = Object.entries(DATA.itens).filter(([, i]) => i.quantidade > 0);
+
+  if (itensDisp.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>Nenhum item disponível</p></div>';
+    return;
+  }
+
+  container.innerHTML = itensDisp.map(([id, item]) => {
+    const cat = DATA.categorias[item.categoriaId]?.nome || 'Sem categoria';
+    return `
+      <div class="item-card">
+        <div class="item-cat">${cat}</div>
+        <div class="item-name">${item.nome}</div>
+        <div class="item-price">R$ ${item.preco.toFixed(2)}</div>
+        <div class="item-stock">Estoque: <span>${item.quantidade}</span> unidades</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderItens(filterCat = null) {
+  // Filtros
+  const filterBar = document.getElementById('filter-categorias');
+  const cats = Object.entries(DATA.categorias);
+  filterBar.innerHTML = `
+    <button class="filter-btn ${!filterCat ? 'active' : ''}" onclick="renderItens(null)">Todas</button>
+    ${cats.map(([id, cat]) => `<button class="filter-btn ${filterCat === id ? 'active' : ''}" onclick="renderItens('${id}')">${cat.nome}</button>`).join('')}
+  `;
+
+  const tbody = document.getElementById('itens-tbody');
+  let itens = Object.entries(DATA.itens);
+  if (filterCat) itens = itens.filter(([, i]) => i.categoriaId === filterCat);
+
+  if (itens.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#555;padding:40px;">Nenhum item encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = itens.map(([id, item]) => {
+    const cat = DATA.categorias[item.categoriaId]?.nome || '—';
+    const statusClass = item.quantidade > 0 ? 'badge-green' : 'badge-red';
+    const statusText = item.quantidade > 0 ? 'Em Estoque' : 'Sem Estoque';
+    return `
+      <tr>
+        <td><strong style="color:#fff">${item.nome}</strong></td>
+        <td><span class="badge badge-purple">${cat}</span></td>
+        <td style="color:#00e676;font-weight:600;">R$ ${item.preco.toFixed(2)}</td>
+        <td>${item.quantidade}</td>
+        <td><code style="font-size:0.78rem;color:#ff9f43;">${item.chavePix}</code></td>
+        <td><span class="badge ${statusClass}">${statusText}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderCategorias() {
+  const tbody = document.getElementById('categorias-tbody');
+  const cats = Object.entries(DATA.categorias);
+
+  if (cats.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#555;padding:40px;">Nenhuma categoria criada</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = cats.map(([id, cat]) => {
+    const itemCount = Object.values(DATA.itens).filter(i => i.categoriaId === id).length;
+    const date = new Date(cat.criadoEm).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return `
+      <tr>
+        <td><strong style="color:#fff">${cat.nome}</strong></td>
+        <td><span class="badge badge-purple">${itemCount} item(s)</span></td>
+        <td style="color:#666;">${date}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderTickets() {
+  const tbody = document.getElementById('tickets-tbody');
+  const tickets = Object.entries(DATA.tickets);
+
+  if (tickets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#555;padding:40px;">Nenhum ticket encontrado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = tickets.map(([chId, ticket]) => {
+    const item = DATA.itens[ticket.itemId];
+    const itemNome = item ? item.nome : 'Desconhecido';
+    const statusMap = { pendente: ['badge-orange', 'Pendente'], aceito: ['badge-green', 'Aceito'], recusado: ['badge-red', 'Recusado'] };
+    const [badgeClass, statusText] = statusMap[ticket.status] || ['', ticket.status];
+    const date = new Date(ticket.criadoEm).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    return `
+      <tr>
+        <td><code style="font-size:0.78rem;color:#8892a4;">${ticket.usuarioId}</code></td>
+        <td><strong style="color:#fff">${itemNome}</strong></td>
+        <td><span class="badge ${badgeClass}">${statusText}</span></td>
+        <td>${ticket.comprovantes ? ticket.comprovantes.length : 0}</td>
+        <td><code style="font-size:0.78rem;color:#ff9f43;">${ticket.ip || '—'}</code></td>
+        <td style="color:#666;">${date}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadData();
+</script>
+</body>
+</html>
